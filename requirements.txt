@@ -6,3 +6,4 @@ scikit-learn
 jupyterlab
 ipykernel
 joblib
+xgboost

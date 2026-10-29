@@ -1,9 +1,16 @@
-# Điều phối quá trình train và đánh giá cross-validation
+# Điều phối quá trình train: cross-validation (cv) và huấn luyện mô hình cuối (fit)
+#
+#   python -m src.train                                  # cv baseline LR + XGBoost (như cũ)
+#   python -m src.train cv  --models decision_tree random_forest
+#   python -m src.train fit --models decision_tree random_forest
+import argparse
 import json
 from datetime import datetime
 from pathlib import Path
 
+import joblib
 import pandas as pd
+import sklearn
 
 from sklearn.metrics import (
     f1_score,
@@ -15,11 +22,14 @@ from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.pipeline import Pipeline
 
 from src.data import load_train_test
-from src.models import build_model, requires_scaling
+from src.models import MODEL_NAMES, build_model, requires_scaling
 from src.preprocessing import build_preprocessor
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# Nơi lưu pipeline đã huấn luyện trên toàn bộ tập train (dùng cho evaluate/predict).
+MODEL_DIR = PROJECT_ROOT / "outputs" / "models"
 
 RANDOM_STATE = 42
 N_SPLITS = 5
@@ -117,8 +127,8 @@ def evaluate_baseline(
     return fold_results, summary
 
 
-def main() -> None:
-
+def run_cross_validation(model_names: tuple[str, ...]) -> None:
+    """Chạy 5-fold CV trên tập train cho các mô hình và lưu kết quả."""
 
     X_train, _, y_train, _ = load_train_test()
 
@@ -154,7 +164,7 @@ def main() -> None:
                     random_state=RANDOM_STATE,
                 ).get_params(),
             }
-            for name in BASELINE_MODELS
+            for name in model_names
         },
     }
 
@@ -172,7 +182,7 @@ def main() -> None:
     all_fold_results = []
     all_summaries = []
 
-    for model_name in BASELINE_MODELS:
+    for model_name in model_names:
         print(f"\nĐang chạy: {model_name}", flush=True)
 
         fold_results, summary = evaluate_baseline(
@@ -235,5 +245,97 @@ def main() -> None:
         )
     )
 
+def fit_and_save(
+    model_name: str,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    model_dir: Path = MODEL_DIR,
+) -> Path:
+    """Huấn luyện pipeline trên toàn bộ tập train rồi lưu bằng joblib.
+
+    File .joblib chứa cả bộ tiền xử lý lẫn mô hình, nên predict/evaluate
+    chỉ cần nạp lại file này, không phải tiền xử lý lại thủ công.
+    """
+
+    pipeline = build_training_pipeline(model_name)
+    pipeline.fit(X_train, y_train)
+
+    model_dir = Path(model_dir)
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    model_path = model_dir / f"{model_name}.joblib"
+    joblib.dump(pipeline, model_path)
+
+    metadata = {
+        "model": model_name,
+        "trained_at": datetime.now().isoformat(timespec="seconds"),
+        "random_state": RANDOM_STATE,
+        "train_rows": len(X_train),
+        "input_features": X_train.columns.tolist(),
+        "sklearn_version": sklearn.__version__,
+        "parameters": pipeline.named_steps["model"].get_params(),
+    }
+
+    with (model_dir / f"{model_name}.json").open(
+        "w", encoding="utf-8"
+    ) as file:
+        json.dump(
+            metadata,
+            file,
+            ensure_ascii=False,
+            indent=2,
+            default=str,
+        )
+
+    return model_path
+
+
+def run_fit(model_names: tuple[str, ...]) -> None:
+    X_train, _, y_train, _ = load_train_test()
+
+    print("Dữ liệu train:", X_train.shape)
+
+    for model_name in model_names:
+        print(f"\nĐang huấn luyện: {model_name}", flush=True)
+
+        model_path = fit_and_save(model_name, X_train, y_train)
+
+        print("Đã lưu pipeline:", model_path.relative_to(PROJECT_ROOT))
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(dest="command")
+
+    for command, help_text in (
+        ("cv", "Cross-validation trên tập train (mặc định)"),
+        ("fit", "Huấn luyện trên toàn bộ tập train và lưu pipeline"),
+    ):
+        subparser = subparsers.add_parser(command, help=help_text)
+        subparser.add_argument(
+            "--models",
+            nargs="+",
+            choices=MODEL_NAMES,
+            default=None,
+            help="Danh sách mô hình (cv mặc định: LR + XGBoost; "
+            "fit mặc định: tất cả).",
+        )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    # Không truyền lệnh con => giữ hành vi cũ: cv baseline LR + XGBoost.
+    command = args.command or "cv"
+    models = getattr(args, "models", None)
+
+    if command == "cv":
+        run_cross_validation(tuple(models) if models else BASELINE_MODELS)
+    else:
+        run_fit(tuple(models) if models else MODEL_NAMES)
+
+
 if __name__ == "__main__":
-    main()
+    main()

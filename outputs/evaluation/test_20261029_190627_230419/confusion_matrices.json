@@ -1,0 +1,29 @@
+{
+  "labels": [
+    "Không rời (0)",
+    "Rời (1)"
+  ],
+  "layout": "[[TN, FP], [FN, TP]]",
+  "matrices": {
+    "decision_tree": [
+      [
+        839,
+        196
+      ],
+      [
+        188,
+        186
+      ]
+    ],
+    "random_forest": [
+      [
+        927,
+        108
+      ],
+      [
+        194,
+        180
+      ]
+    ]
+  }
+}

@@ -1,0 +1,82 @@
+\section{Tổng quan tài liệu}
+
+\subsection{Bài toán dự đoán khách hàng rời bỏ}
+Dự đoán khách hàng rời bỏ là một bài toán kinh điển trong quản trị quan hệ khách hàng (CRM), đặc biệt trong ngành viễn thông -- nơi thị trường bão hòa và chi phí chuyển đổi nhà mạng thấp. Các nghiên cứu thường mô hình hóa bài toán dưới dạng phân loại nhị phân có giám sát trên dữ liệu dạng bảng (\textit{tabular data}) gồm thông tin hợp đồng, hành vi sử dụng và thanh toán \cite{huang2012, verbeke2012}.
+
+Một số đặc điểm chung của bài toán được ghi nhận trong tài liệu:
+\begin{itemize}
+    \item \textbf{Dữ liệu mất cân bằng:} số khách hàng rời bỏ thường chiếm thiểu số, khiến Accuracy dễ gây hiểu lầm; các chỉ số như Recall, F1-score, ROC-AUC được ưu tiên \cite{vafeiadis2015}.
+    \item \textbf{Chi phí sai sót không đối xứng:} bỏ sót một khách hàng sắp rời bỏ (False Negative) thường tốn kém hơn việc gửi nhầm ưu đãi cho khách hàng trung thành (False Positive). Verbeke và cộng sự \cite{verbeke2012} đề xuất đánh giá mô hình theo lợi nhuận kỳ vọng thay vì chỉ theo độ chính xác.
+    \item \textbf{Vai trò của đặc trưng:} chất lượng đặc trưng đầu vào ảnh hưởng mạnh đến hiệu năng; nhiều nghiên cứu cho thấy Feature Engineering dựa trên hiểu biết nghiệp vụ mang lại cải thiện đáng kể \cite{huang2012, ahmad2019}.
+\end{itemize}
+
+\subsection{Các phương pháp học máy cổ điển}
+
+\subsubsection{Logistic Regression}
+Logistic Regression là mô hình tuyến tính tổng quát ước lượng xác suất thuộc lớp dương thông qua hàm sigmoid \cite{hosmer2013}:
+\begin{equation}
+    P(y = 1 \mid \mathbf{x}) = \sigma(\mathbf{w}^\top \mathbf{x} + b) = \frac{1}{1 + e^{-(\mathbf{w}^\top \mathbf{x} + b)}}
+\end{equation}
+Tham số được học bằng cách cực tiểu hóa hàm mất mát log-loss có chính quy hóa:
+\begin{equation}
+    \mathcal{L}(\mathbf{w}, b) = -\frac{1}{n}\sum_{i=1}^{n}\left[y_i \log \hat{p}_i + (1-y_i)\log(1-\hat{p}_i)\right] + \frac{1}{2C}\|\mathbf{w}\|_2^2
+\end{equation}
+trong đó $C$ là nghịch đảo cường độ chính quy hóa. Ưu điểm: nhanh, ổn định, hệ số dễ diễn giải; thường là \textit{baseline} mạnh trên dữ liệu churn. Nhược điểm: chỉ biểu diễn được biên quyết định tuyến tính, nhạy với thang đo của đặc trưng nên cần chuẩn hóa.
+
+\subsubsection{Decision Tree}
+Cây quyết định (CART \cite{breiman1984}) chia không gian đặc trưng thành các vùng bằng chuỗi luật \textit{if--then}. Tại mỗi nút, thuật toán chọn đặc trưng và ngưỡng làm giảm nhiều nhất độ vẩn đục, ví dụ chỉ số Gini:
+\begin{equation}
+    \text{Gini}(S) = 1 - \sum_{k=1}^{K} p_k^2
+\end{equation}
+Cây dễ diễn giải, không cần chuẩn hóa và tự nắm bắt được tương tác phi tuyến, nhưng có phương sai cao: nếu không giới hạn \texttt{max\_depth}, \texttt{min\_samples\_split},\ldots, cây dễ học thuộc dữ liệu huấn luyện (\textit{overfitting}).
+
+\subsubsection{Random Forest}
+Random Forest \cite{breiman2001} là phương pháp \textit{ensemble} theo hướng \textit{bagging}: huấn luyện $T$ cây trên các mẫu bootstrap khác nhau, mỗi lần tách nút chỉ xét một tập con ngẫu nhiên các đặc trưng, rồi tổng hợp bằng bỏ phiếu/trung bình xác suất:
+\begin{equation}
+    \hat{p}(\mathbf{x}) = \frac{1}{T}\sum_{t=1}^{T} h_t(\mathbf{x})
+\end{equation}
+Việc lấy trung bình nhiều cây ít tương quan giúp giảm phương sai so với một cây đơn lẻ, nhờ đó Random Forest thường có hiệu năng tốt và ổn định trên dữ liệu bảng.
+
+\subsubsection{Gradient Boosting và XGBoost}
+Khác với bagging, \textit{boosting} xây dựng các cây tuần tự, mỗi cây mới học phần sai số (gradient) của mô hình hiện tại:
+\begin{equation}
+    F_m(\mathbf{x}) = F_{m-1}(\mathbf{x}) + \eta \, h_m(\mathbf{x})
+\end{equation}
+với $\eta$ là tốc độ học (\texttt{learning\_rate}). XGBoost \cite{chen2016} bổ sung xấp xỉ bậc hai của hàm mất mát, chính quy hóa độ phức tạp cây, xử lý giá trị thiếu và nhiều tối ưu tính toán. XGBoost là một trong những thuật toán mạnh nhất cho dữ liệu dạng bảng, nhưng có nhiều siêu tham số và dễ overfit nếu không được tinh chỉnh.
+
+\subsubsection{Các nghiên cứu so sánh}
+Vafeiadis và cộng sự \cite{vafeiadis2015} so sánh nhiều thuật toán (mạng nơ-ron, SVM, cây quyết định, Naïve Bayes, Logistic Regression) cho bài toán churn viễn thông và cho thấy việc kết hợp boosting giúp cải thiện hiệu năng, trong đó SVM kết hợp boosting đạt kết quả tốt nhất. Ahmad và cộng sự \cite{ahmad2019} xây dựng hệ thống dự đoán churn trên nền tảng dữ liệu lớn và ghi nhận XGBoost cho AUC cao nhất trong các mô hình được thử nghiệm. Nhìn chung, các phương pháp ensemble dựa trên cây thường vượt trội, tuy nhiên mức chênh lệch phụ thuộc mạnh vào dữ liệu, đặc trưng và việc tinh chỉnh siêu tham số -- đây là lý do đề tài so sánh các mô hình trên cùng một quy trình đánh giá.
+
+\subsection{Tiền xử lý và Feature Engineering}
+\begin{itemize}
+    \item \textbf{Mã hóa biến phân loại:} One-Hot Encoding phù hợp với biến danh nghĩa có ít giá trị; Ordinal/Label Encoding gọn hơn và phù hợp cho mô hình cây; Target Encoding hữu ích khi số giá trị lớn nhưng cần thực hiện trong từng fold để tránh rò rỉ nhãn.
+    \item \textbf{Chuẩn hóa:} StandardScaler, MinMaxScaler, RobustScaler cần thiết cho các mô hình dựa trên khoảng cách hoặc gradient (Logistic Regression), nhưng không ảnh hưởng đến mô hình cây.
+    \item \textbf{Feature Engineering:} tạo đặc trưng từ hiểu biết nghiệp vụ, ví dụ nhóm thời gian gắn bó, tổng số dịch vụ sử dụng, chi phí trung bình mỗi tháng hay các đặc trưng tương tác giữa loại hợp đồng và chi phí.
+    \item \textbf{Tránh rò rỉ dữ liệu:} mọi bước \texttt{fit} của tiền xử lý phải được thực hiện chỉ trên phần dữ liệu huấn luyện; trong \texttt{scikit-learn} \cite{pedregosa2011} điều này được đảm bảo bằng cách đóng gói tiền xử lý và mô hình trong một \texttt{Pipeline}.
+\end{itemize}
+
+\subsection{Xử lý mất cân bằng dữ liệu}
+\begin{itemize}
+    \item \textbf{Class weight / cost-sensitive learning:} gán trọng số lớn hơn cho lớp thiểu số trong hàm mất mát (\texttt{class\_weight="balanced"} hoặc \texttt{scale\_pos\_weight} trong XGBoost).
+    \item \textbf{SMOTE} \cite{chawla2002}: sinh mẫu tổng hợp cho lớp thiểu số bằng nội suy giữa một mẫu và các láng giềng gần nhất cùng lớp. SMOTE chỉ được áp dụng trên phần huấn luyện của mỗi fold.
+    \item \textbf{Điều chỉnh ngưỡng quyết định:} thay vì ngưỡng 0{,}5 mặc định, chọn ngưỡng trên tập validation để cân bằng Precision và Recall theo mục tiêu kinh doanh.
+\end{itemize}
+
+\subsection{Tối ưu siêu tham số}
+\begin{itemize}
+    \item \textbf{Grid Search:} thử toàn bộ tổ hợp trên lưới rời rạc; đơn giản nhưng chi phí tăng theo cấp số nhân với số siêu tham số.
+    \item \textbf{Random Search} \cite{bergstra2012}: lấy mẫu ngẫu nhiên trong không gian tìm kiếm; với cùng ngân sách thường hiệu quả hơn Grid Search khi chỉ một số ít siêu tham số thực sự quan trọng.
+    \item \textbf{Tối ưu Bayes / Optuna} \cite{akiba2019}: dùng kết quả các lần thử trước (ví dụ thuật toán TPE) để đề xuất cấu hình tiếp theo, kết hợp cơ chế cắt tỉa (\textit{pruning}) các lần thử kém.
+\end{itemize}
+
+\subsection{Giải thích mô hình}
+Bên cạnh \textit{feature importance} của mô hình cây và hệ số của Logistic Regression, SHAP (SHapley Additive exPlanations) \cite{lundberg2017} phân rã mỗi dự đoán thành tổng đóng góp của từng đặc trưng dựa trên giá trị Shapley của lý thuyết trò chơi:
+\begin{equation}
+    f(\mathbf{x}) = \phi_0 + \sum_{j=1}^{M} \phi_j
+\end{equation}
+SHAP cho phép giải thích cả ở mức toàn cục (đặc trưng nào quan trọng nhất) và mức từng khách hàng (vì sao một khách hàng bị dự đoán có nguy cơ cao).
+
+Một cách đơn giản hơn và không phụ thuộc mô hình là \textbf{permutation importance}, được đề xuất cùng Random Forest \cite{breiman2001}: xáo trộn ngẫu nhiên giá trị của một đặc trưng trên tập đánh giá và đo mức giảm của chỉ số đánh giá. Đặc trưng làm chỉ số giảm càng nhiều thì mô hình càng dựa vào nó. Cách này đo trực tiếp trên đặc trưng gốc (trước One-Hot Encoding) nên dễ diễn giải, nhưng có thể đánh giá thấp các đặc trưng tương quan mạnh với nhau.
+
+\subsection{Định hướng của đề tài}
+Từ khảo sát trên, đề tài lựa chọn so sánh bốn mô hình đại diện cho các họ thuật toán khác nhau (tuyến tính, cây đơn, bagging, boosting) trên cùng một pipeline và cùng cách chia dữ liệu, đồng thời lần lượt đánh giá đóng góp của từng kỹ thuật: Feature Engineering, xử lý mất cân bằng, Hyperparameter Tuning và chọn ngưỡng quyết định.

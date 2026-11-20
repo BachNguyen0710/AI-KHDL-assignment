@@ -1,0 +1,33 @@
+\section{Kết luận và hướng phát triển}
+
+\subsection{Kết quả đạt được}
+\begin{itemize}
+    \item Xây dựng được pipeline học máy hoàn chỉnh và có thể tái lập cho bài toán dự đoán khách hàng rời bỏ: làm sạch dữ liệu có kiểm tra, tiền xử lý bằng \texttt{ColumnTransformer}, Feature Engineering, xử lý mất cân bằng, cross-validation phân tầng, tuning siêu tham số, chọn ngưỡng quyết định, đánh giá trên tập test và dự đoán cho khách hàng mới.
+    \item Quy trình đánh giá được thiết kế để tránh rò rỉ dữ liệu: tập test được tách riêng từ đầu và chỉ dùng một lần; mọi bước tiền xử lý, Feature Engineering và SMOTE nằm trong Pipeline nên chỉ được \texttt{fit} trên phần huấn luyện của từng fold; ngưỡng được chọn trên xác suất out-of-fold của tập train; mọi thực nghiệm dùng chung 5 fold nên so sánh được theo cặp.
+    \item Ở cấu hình baseline, Logistic Regression tốt nhất (F1 0,592, ROC-AUC 0,846, PR-AUC 0,662), sát sau là XGBoost; Decision Tree và Random Forest overfit nặng. Recall của mọi mô hình chỉ khoảng 0,48--0,54.
+    \item \textbf{Class weight} giải quyết được vấn đề Recall thấp: F1 tăng 0,036--0,054 ở cả 5 fold với Logistic Regression, Random Forest và XGBoost, Recall tăng 0,16--0,26. SMOTE chỉ tương đương với Logistic Regression và kém hơn với mô hình cây.
+    \item \textbf{Tuning} bằng RandomizedSearchCV giải quyết overfitting của mô hình cây: khoảng cách F1 train--validation giảm từ 0,16--0,49 xuống 0,03--0,07; PR-AUC của Decision Tree tăng 0,24, Random Forest tăng 0,06.
+    \item \textbf{Feature Engineering} (9 đặc trưng mới) và \textbf{chọn ngưỡng} gần như không thay đổi F1: chênh lệch nằm trong mức dao động giữa các fold.
+    \item Mô hình cuối cùng là \textbf{XGBoost đã tuning, class weight, ngưỡng 0,57}, được chọn trước khi dùng tập test dựa trên PR-AUC cross-validation cao nhất (0,671). Trên tập test, mô hình đạt F1 0,634, Recall 0,749, Precision 0,550, ROC-AUC 0,846, PR-AUC 0,662 và phát hiện được 280/374 khách hàng rời bỏ. Kết quả test khớp với cross-validation (PR-AUC 0,671 so với 0,662).
+    \item Permutation importance và hệ số Logistic Regression thống nhất với EDA: \texttt{tenure}, \texttt{Contract}, \texttt{InternetService}, các dịch vụ hỗ trợ (\texttt{TechSupport}, \texttt{OnlineSecurity}) và phương thức thanh toán là các yếu tố quan trọng nhất.
+\end{itemize}
+
+\subsection{Kết luận chung}
+Hai kỹ thuật mang lại cải thiện chính là xử lý mất cân bằng bằng class weight và tuning siêu tham số; Feature Engineering và chọn ngưỡng chỉ có tác động nhỏ. Sau khi áp dụng cả hai kỹ thuật chính, bốn mô hình đạt hiệu năng rất sát nhau (F1 test 0,611--0,634). Với 374 khách hàng rời bỏ trong tập test, chênh lệch cỡ 0,02 có thể chỉ là nhiễu, nên Logistic Regression -- đơn giản, nhanh và dễ giải thích -- vẫn là một lựa chọn thay thế đáng cân nhắc.
+
+\subsection{Ý nghĩa kinh doanh}
+Các quan sát từ dữ liệu gợi ý một số hướng hành động cho doanh nghiệp, với lưu ý đây là mối liên hệ thống kê, không phải quan hệ nhân quả:
+\begin{itemize}
+    \item Khách hàng hợp đồng theo tháng, mới sử dụng dịch vụ (\texttt{tenure} thấp) là nhóm rủi ro cao nhất; ưu đãi chuyển sang hợp đồng dài hạn có thể là đòn bẩy giữ chân.
+    \item Khách hàng dùng Fiber optic nhưng không đăng ký TechSupport/OnlineSecurity có tỉ lệ rời bỏ cao; cần xem xét chất lượng dịch vụ và gói hỗ trợ đi kèm.
+    \item Mô hình xuất ra xác suất rời bỏ cho phép xếp hạng khách hàng và ưu tiên nguồn lực chăm sóc. Ngưỡng quyết định nên được chọn theo chi phí: ngưỡng tối ưu F1 (0,57) cân bằng Precision và Recall; nếu bỏ sót một khách hàng rời bỏ tốn kém hơn nhiều so với gửi nhầm một ưu đãi, ngưỡng F2 (0,37) phát hiện được 329/374 khách hàng rời bỏ với Precision 0,46.
+\end{itemize}
+
+\subsection{Hạn chế và hướng phát triển}
+\begin{itemize}
+    \item Bộ dữ liệu là ảnh chụp tĩnh tại một thời điểm, không có thông tin hành vi theo thời gian (số cuộc gọi hỗ trợ, lịch sử thanh toán trễ,\ldots).
+    \item Kích thước dữ liệu nhỏ (7.043 khách hàng) nên chênh lệch giữa các mô hình tốt nhất thường nằm trong mức dao động giữa các fold.
+    \item Siêu tham số và ngưỡng được chọn trên cùng các fold dùng để chấm điểm, nên điểm cross-validation sau tuning hơi lạc quan; nested cross-validation sẽ cho ước lượng khách quan hơn (tập test cho thấy mức lạc quan này nhỏ).
+    \item Chưa thực hiện so sánh các phương pháp Encoding/Scaling như kế hoạch ban đầu.
+    \item Hướng phát triển: chọn ngưỡng theo hàm chi phí khi có số liệu kinh doanh, hiệu chỉnh xác suất (\textit{probability calibration}), giải thích theo từng khách hàng bằng SHAP, thử thêm LightGBM/CatBoost, và triển khai mô hình dưới dạng API hoặc dashboard.
+\end{itemize}

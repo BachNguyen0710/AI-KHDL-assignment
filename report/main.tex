@@ -1,0 +1,151 @@
+\documentclass[a4paper]{article}
+% Cấu hình lề và kích thước Header/Footer
+\usepackage[a4paper, margin=2cm, headheight=45pt, footskip=1.2cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc} 
+\usepackage[vietnamese]{babel}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+\usepackage{listings}
+\usepackage{booktabs, array, multirow, colortbl}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage[hidelinks]{hyperref}
+
+% ===================== CODE STYLE PYTHON =====================
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codeframe}{RGB}{200,200,200}
+\definecolor{keyword}{RGB}{0,0,180}
+\definecolor{comment}{RGB}{80,120,80}
+\definecolor{string}{RGB}{160,30,30}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{codebg},
+    frame=single,
+    rulecolor=\color{codeframe},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{keyword}\bfseries,
+    commentstyle=\color{comment}\itshape,
+    stringstyle=\color{string},
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=8pt,
+    tabsize=4,
+    showstringspaces=false,
+    breaklines=true,
+    captionpos=b,
+    language=Python,
+    extendedchars=true,
+    literate=
+        {á}{{\'a}}1 {à}{{\`a}}1 {ả}{{\h{a}}}1 {ã}{{\~a}}1 {ạ}{{\d{a}}}1
+        {ă}{{\u{a}}}1 {ắ}{{\'\u{a}}}1 {ằ}{{\`\u{a}}}1 {ẳ}{{\h{\u{a}}}}1
+        {ẵ}{{\~\u{a}}}1 {ặ}{{\d{\u{a}}}}1
+        {â}{{\^a}}1 {ấ}{{\'\^a}}1 {ầ}{{\`\^a}}1 {ẩ}{{\h{\^a}}}1
+        {ẫ}{{\~\^a}}1 {ậ}{{\d{\^a}}}1
+        {é}{{\'e}}1 {è}{{\`e}}1 {ẻ}{{\h{e}}}1 {ẽ}{{\~e}}1 {ẹ}{{\d{e}}}1
+        {ê}{{\^e}}1 {ế}{{\'\^e}}1 {ề}{{\`\^e}}1 {ể}{{\h{\^e}}}1
+        {ễ}{{\~\^e}}1 {ệ}{{\d{\^e}}}1
+        {í}{{\'i}}1 {ì}{{\`i}}1 {ỉ}{{\h{i}}}1 {ĩ}{{\~i}}1 {ị}{{\d{i}}}1
+        {ó}{{\'o}}1 {ò}{{\`o}}1 {ỏ}{{\h{o}}}1 {õ}{{\~o}}1 {ọ}{{\d{o}}}1
+        {ô}{{\^o}}1 {ố}{{\'\^o}}1 {ồ}{{\`\^o}}1 {ổ}{{\h{\^o}}}1
+        {ỗ}{{\~\^o}}1 {ộ}{{\d{\^o}}}1
+        {ơ}{{\horn{o}}}1 {ớ}{{\'\horn{o}}}1 {ờ}{{\`\horn{o}}}1
+        {ở}{{\h{\horn{o}}}}1 {ỡ}{{\~\horn{o}}}1 {ợ}{{\d{\horn{o}}}}1
+        {ú}{{\'u}}1 {ù}{{\`u}}1 {ủ}{{\h{u}}}1 {ũ}{{\~u}}1 {ụ}{{\d{u}}}1
+        {ư}{{\horn{u}}}1 {ứ}{{\'\horn{u}}}1 {ừ}{{\`\horn{u}}}1
+        {ử}{{\h{\horn{u}}}}1 {ữ}{{\~\horn{u}}}1 {ự}{{\d{\horn{u}}}}1
+        {ý}{{\'y}}1 {ỳ}{{\`y}}1 {ỷ}{{\h{y}}}1 {ỹ}{{\~y}}1 {ỵ}{{\d{y}}}1
+        {đ}{{\dj}}1 {Đ}{{\DJ}}1
+}
+% ---------- GHI CHÚ PHẦN CHƯA HOÀN THÀNH ----------
+% Dùng \todo{...} cho các phần chờ kết quả thực nghiệm; xóa khi đã điền số liệu.
+\newcommand{\todo}[1]{\colorbox{yellow!40}{\parbox{0.95\linewidth}{\small\textbf{TODO:} #1}}}
+
+% ---------- HEADER & FOOTER CONFIGURATION ----------
+\pagestyle{fancy}
+\fancyhf{}
+
+\fancyhead[L]{
+ \begin{tabular}{rl}
+    \begin{picture}(25,15)(0,0)
+    \put(-3,-14){\includegraphics[width=17mm]{hcmut.png}}
+   \end{picture}&
+    \begin{tabular}{l}
+        \textbf{\ttfamily TRƯỜNG ĐẠI HỌC BÁCH KHOA - ĐHQG-HCM}\\
+        \textbf{\ttfamily KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
+    \end{tabular}
+ \end{tabular}
+}
+
+\fancyfoot[L]{\scriptsize \ttfamily Lập trình cho TTNT và KHDL (CO3135) - HK261 - Năm học 2026-2027}
+\fancyfoot[R]{\scriptsize \ttfamily Trang {\thepage}/\pageref{LastPage}}
+
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\footrulewidth}{0.3pt}
+
+\linespread{1.5}
+\setlength{\emergencystretch}{3em} % tránh tràn lề với các đoạn \texttt dài
+
+\begin{document}
+
+% Trang bìa
+\begin{titlepage}
+\begin{center}
+VIETNAM NATIONAL UNIVERSITY, HO CHI MINH CITY \\
+UNIVERSITY OF TECHNOLOGY \\
+FACULTY OF COMPUTER SCIENCE AND ENGINEERING
+\end{center}
+\vspace{1cm}
+\begin{figure}[h!]
+\begin{center}
+\includegraphics[width=10cm]{hcmut.png}
+\end{center}
+\end{figure}
+\vspace{0.5cm}
+\begin{center}
+\begin{tabular}{c}
+\multicolumn{1}{l}{\textbf{{\Large Lập trình cho Trí tuệ nhân tạo và Khoa học dữ liệu (CO3135)}}}\\
+\multicolumn{1}{l}{\textbf{{\large HK261 - Lớp L01}}}\\
+~~\\ \hline \\
+\multicolumn{1}{l}{\textbf{{\Large Bài tập lớn}}}\\ \\
+\parbox{15cm}{\centering\textbf{\textit{{\LARGE Dự đoán khách hàng rời đi bằng máy học với kỹ thuật xử lý đặc trưng và tối ưu hóa siêu tham số}}}}\\ \\ \hline
+\end{tabular}
+\end{center}
+\vspace{1.5cm}
+\begin{table}[h]
+\centering
+    \begin{tabular}{rl}
+    \hspace{3 cm}\textbf{Giảng viên hướng dẫn}: & Trần Huy\\
+    & \\[10pt]
+    \textbf{Sinh viên thực hiện}:
+    & Nguyễn Tiến Bách - 2310201\\
+    & Trần Gia Bảo Anh - 2310148\\
+    \end{tabular}
+\end{table}
+\vfill
+\begin{center}
+{\footnotesize HO CHI MINH CITY, NOVEMBER 2026}
+\end{center}
+\end{titlepage}
+
+% Trang mục lục
+\newpage
+\tableofcontents
+\thispagestyle{fancy}
+\newpage
+
+% Các nội dung chính
+\include{chapters/01_gioi_thieu}
+\include{chapters/02_tong_quan_tai_lieu}
+\include{chapters/03_du_lieu_tien_xu_ly}
+\include{chapters/04_mo_hinh_pipeline}
+\include{chapters/05_thuc_nghiem}
+\include{chapters/06_ket_luan}
+\include{chapters/references}
+\end{document}

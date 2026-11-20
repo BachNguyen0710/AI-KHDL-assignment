@@ -1,0 +1,42 @@
+\section{Giới thiệu đề tài}
+
+\subsection{Đặt vấn đề}
+Trong các ngành dịch vụ thuê bao như viễn thông, ngân hàng hay các nền tảng trực tuyến, \textbf{khách hàng rời bỏ} (\textit{customer churn}) là một trong những nguyên nhân chính làm suy giảm doanh thu. Chi phí để thu hút một khách hàng mới thường cao hơn nhiều so với chi phí giữ chân một khách hàng hiện tại, vì vậy doanh nghiệp có động lực lớn để nhận diện sớm những khách hàng có nguy cơ rời bỏ và chủ động đưa ra các chính sách giữ chân (ưu đãi, nâng cấp hợp đồng, hỗ trợ kỹ thuật,\ldots).
+
+Khách hàng có thể ngừng sử dụng dịch vụ vì chi phí cao, chất lượng dịch vụ không phù hợp, hợp đồng ngắn hạn dễ chấm dứt hoặc nhiều lý do khác. Các dấu hiệu này thường ẩn trong thông tin hợp đồng, lịch sử sử dụng và hành vi thanh toán của khách hàng. Đây là bối cảnh phù hợp để ứng dụng các thuật toán Học máy (Machine Learning) nhằm khai thác các quy luật từ dữ liệu lịch sử.
+
+\subsection{Phát biểu bài toán}
+Dựa trên thông tin nhân khẩu học, các dịch vụ đã đăng ký, thông tin hợp đồng và chi phí của khách hàng, bài toán đặt ra là dự đoán khách hàng đó có rời bỏ dịch vụ hay không. Đây là bài toán \textbf{phân loại nhị phân} (\textit{binary classification}):
+\begin{itemize}
+    \item \textbf{Đầu vào:} vector đặc trưng $\mathbf{x}$ gồm 19 thuộc tính của một khách hàng (giới tính, thời gian sử dụng, loại hợp đồng, phương thức thanh toán, chi phí hàng tháng,\ldots).
+    \item \textbf{Đầu ra:} nhãn $y \in \{0, 1\}$, trong đó
+    \begin{itemize}
+        \item $\text{Churn} = 0$: khách hàng không rời bỏ dịch vụ;
+        \item $\text{Churn} = 1$: khách hàng rời bỏ dịch vụ.
+    \end{itemize}
+\end{itemize}
+Ngoài nhãn dự đoán, mô hình còn cung cấp xác suất $P(y=1 \mid \mathbf{x})$, cho phép doanh nghiệp xếp hạng khách hàng theo mức độ rủi ro và ưu tiên nguồn lực giữ chân.
+
+\subsection{Mục tiêu}
+Đề tài tập trung vào nhánh \textbf{Classic Machine Learning} với các mục tiêu cụ thể:
+\begin{enumerate}
+    \item Xây dựng một \textbf{pipeline} học máy hoàn chỉnh, có thể tái lập, từ đọc dữ liệu, làm sạch, tiền xử lý đến huấn luyện, đánh giá và dự đoán cho khách hàng mới.
+    \item Huấn luyện và so sánh bốn thuật toán: Logistic Regression, Decision Tree, Random Forest và XGBoost.
+    \item Đánh giá ảnh hưởng của \textbf{Feature Engineering}, kỹ thuật \textbf{xử lý mất cân bằng dữ liệu}, \textbf{Hyperparameter Tuning} và việc \textbf{chọn ngưỡng quyết định} lên hiệu năng mô hình.
+    \item Giải thích mô hình (permutation importance, hệ số Logistic Regression) và liên hệ kết quả với góc nhìn kinh doanh. Các mối liên hệ rút ra là quan hệ thống kê quan sát được từ dữ liệu, không phải kết luận nhân quả.
+\end{enumerate}
+
+\subsection{Phạm vi và phương pháp thực hiện}
+Đề tài sử dụng bộ dữ liệu công khai \textit{Telco Customer Churn} của IBM (7.043 khách hàng, 21 cột). Quy trình được triển khai theo các bước:
+\begin{itemize}
+    \item \textbf{Khám phá và làm sạch dữ liệu (EDA):} kiểm tra kiểu dữ liệu, giá trị thiếu, trùng lặp, phân bố nhãn và mối liên hệ giữa các đặc trưng với Churn.
+    \item \textbf{Tiền xử lý:} xử lý giá trị thiếu, One-Hot Encoding cho biến phân loại, chuẩn hóa biến số khi cần, chia Train/Test 80/20 có phân tầng (\textit{stratified}).
+    \item \textbf{Feature Engineering:} tạo các đặc trưng mới như nhóm thời gian sử dụng, số dịch vụ đăng ký, đặc trưng kết hợp hợp đồng -- thời gian -- chi phí.
+    \item \textbf{Huấn luyện và tối ưu:} Stratified 5-fold Cross-Validation trên tập train; tối ưu siêu tham số bằng RandomizedSearchCV; chọn ngưỡng quyết định trên xác suất out-of-fold.
+    \item \textbf{Đánh giá:} Accuracy, Precision, Recall, F1-score, ROC-AUC, PR-AUC và Confusion Matrix trên tập test được giữ riêng.
+\end{itemize}
+
+Toàn bộ dự án được cài đặt bằng Python với các thư viện \texttt{pandas}, \texttt{numpy}, \texttt{scikit-learn}, \texttt{xgboost}, \texttt{matplotlib} và \texttt{seaborn}. Bài toán không yêu cầu GPU hay Deep Learning.
+
+\subsection{Link github (Source Code)}
+\url{https://github.com/BachNguyen0710/AI-KHDL-assignment}

@@ -1,0 +1,123 @@
+\section{Mô hình và pipeline huấn luyện}
+
+\subsection{Kiến trúc tổng thể}
+Mã nguồn được tổ chức thành các module độc lập trong thư mục \texttt{src/}, mỗi module đảm nhiệm một bước của pipeline:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l p{11.5cm}}
+\toprule
+\textbf{Module} & \textbf{Chức năng} \\
+\midrule
+\texttt{data.py} & Đọc, kiểm tra và làm sạch dữ liệu; tải lại tập train/test theo danh sách \texttt{customerID} đã lưu. \\
+\texttt{features.py} & Transformer \texttt{ChurnFeatureEngineer} tạo 9 đặc trưng mới (Experiment 2). \\
+\texttt{preprocessing.py} & Xây dựng \texttt{ColumnTransformer} (imputation, One-Hot Encoding, scaling). \\
+\texttt{models.py} & Khởi tạo bốn mô hình (có hoặc không có trọng số lớp) và quy định mô hình nào cần chuẩn hóa. \\
+\texttt{train.py} & Chạy Stratified K-Fold Cross-Validation (\texttt{cv}) hoặc huấn luyện trên toàn bộ tập train và lưu pipeline (\texttt{fit}); tùy chọn \texttt{--feature-engineering} và \texttt{--imbalance}. \\
+\texttt{compare.py} & So sánh hai lần chạy CV theo từng fold (paired): chênh lệch trung bình và số fold cải thiện. \\
+\texttt{tune.py} & Tối ưu siêu tham số bằng \texttt{RandomizedSearchCV} trên đúng 5 fold, lưu pipeline tốt nhất. \\
+\texttt{threshold.py} & Chọn ngưỡng quyết định trên xác suất out-of-fold của tập train (tối đa F1 hoặc F2). \\
+\texttt{evaluate.py} & Nạp pipeline đã lưu và ngưỡng đã chọn, đánh giá trên tập test, vẽ Confusion Matrix, đường ROC và Precision--Recall. \\
+\texttt{predict.py} & Dự đoán xác suất churn cho khách hàng mới từ file CSV. \\
+\bottomrule
+\end{tabular}
+\caption{Các module trong mã nguồn}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=0.6cm and 0.5cm,
+    box/.style={rectangle, rounded corners, draw=black!70, fill=blue!8, minimum height=1cm, text width=2.3cm, align=center, font=\small},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick}
+]
+\node[box] (raw) {CSV gốc\\(7.043 dòng)};
+\node[box, right=of raw] (clean) {Làm sạch\\\texttt{data.py}};
+\node[box, right=of clean] (split) {Chia 80/20\\stratified};
+\node[box, right=of split] (cv) {5-fold CV\\trên train};
+\node[box, below=of cv] (fit) {Fit trên\\toàn bộ train};
+\node[box, left=of fit] (test) {Đánh giá\\trên test};
+\node[box, left=of test] (pred) {Dự đoán\\khách hàng mới};
+
+\draw[arrow] (raw) -- (clean);
+\draw[arrow] (clean) -- (split);
+\draw[arrow] (split) -- (cv);
+\draw[arrow] (cv) -- node[right, font=\footnotesize]{chọn cấu hình} (fit);
+\draw[arrow] (fit) -- (test);
+\draw[arrow] (test) -- (pred);
+\end{tikzpicture}
+\caption{Luồng xử lý của pipeline}
+\end{figure}
+
+Mỗi mô hình được đóng gói thành một \texttt{Pipeline} gồm các bước \texttt{features} (chỉ khi bật Feature Engineering), \texttt{preprocessor}, \texttt{smote} (chỉ khi dùng SMOTE) và \texttt{model}:
+
+\begin{lstlisting}[style=pythonstyle, caption={Xây dựng pipeline huấn luyện trong \texttt{src/train.py} (rút gọn)}]
+def build_training_pipeline(model_name, feature_engineering=False,
+                            imbalance="none", balance_ratio=None):
+    steps = []
+    if feature_engineering:
+        steps.append(("features", ChurnFeatureEngineer()))
+    steps.append(("preprocessor", build_preprocessor(
+        scale_numeric=requires_scaling(model_name),
+        feature_engineering=feature_engineering)))
+    if imbalance == "smote":
+        steps.append(("smote", SMOTE(random_state=RANDOM_STATE)))
+    steps.append(("model", build_model(
+        model_name, random_state=RANDOM_STATE,
+        balance_ratio=balance_ratio if imbalance == "class_weight" else None)))
+    if imbalance == "smote":
+        return ImbPipeline(steps=steps)  # chi resample khi fit
+    return Pipeline(steps=steps)
+\end{lstlisting}
+
+Nhờ vậy, file \texttt{.joblib} được lưu chứa cả bộ tiền xử lý lẫn mô hình; \texttt{evaluate.py} và \texttt{predict.py} chỉ cần nạp lại file này mà không phải tiền xử lý thủ công. Mỗi lần chạy thực nghiệm đều lưu \texttt{config.json} (random state, số fold, danh sách đặc trưng, siêu tham số) cùng kết quả từng fold để có thể tái lập và đối chiếu.
+
+\subsection{Cấu hình các mô hình baseline}
+Ở giai đoạn baseline, các mô hình dùng siêu tham số mặc định (hoặc gần mặc định), chưa tinh chỉnh và chưa xử lý mất cân bằng:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l p{9.5cm} c}
+\toprule
+\textbf{Mô hình} & \textbf{Siêu tham số chính} & \textbf{Scaling} \\
+\midrule
+Logistic Regression & \texttt{solver="lbfgs"}, \texttt{C=1.0}, \texttt{max\_iter=2000} & Có \\
+Decision Tree & \texttt{criterion="gini"}, \texttt{max\_depth=None}, \texttt{min\_samples\_split=2} & Không \\
+Random Forest & \texttt{n\_estimators=100}, \texttt{max\_features="sqrt"}, \texttt{max\_depth=None} & Không \\
+XGBoost & \texttt{n\_estimators=100}, \texttt{learning\_rate=0.1}, \texttt{max\_depth=6}, \texttt{tree\_method="hist"} & Không \\
+\bottomrule
+\end{tabular}
+\caption{Cấu hình baseline (\texttt{random\_state=42} cho mọi mô hình)}
+\end{table}
+
+\subsection{Quy trình đánh giá}
+
+\subsubsection{Cross-validation}
+Việc so sánh và lựa chọn mô hình được thực hiện bằng \textbf{Stratified 5-Fold Cross-Validation} trên tập train (5.634 khách hàng). Các fold được sinh một lần với \texttt{random\_state=42} và dùng chung cho mọi mô hình, nên kết quả giữa các mô hình và giữa các lần chạy có thể so sánh trực tiếp. Kết quả được báo cáo dưới dạng \textit{trung bình $\pm$ độ lệch chuẩn} qua 5 fold; độ lệch chuẩn mô tả mức dao động giữa các fold, không phải khoảng tin cậy.
+
+Ngoài điểm validation, nhóm ghi lại điểm trên phần huấn luyện của từng fold (\texttt{return\_train\_score=True}) để đo \textbf{khoảng cách train--validation}, dùng làm dấu hiệu nhận biết overfitting.
+
+\subsubsection{Đánh giá cuối trên tập test}
+Sau khi chọn cấu hình bằng cross-validation, quy trình cuối gồm ba lệnh:
+\begin{enumerate}
+    \item \texttt{python -m src.tune --fit}: tìm siêu tham số và lưu pipeline tốt nhất (đã huấn luyện lại trên toàn bộ tập train) vào \texttt{outputs/models/tuned/}.
+    \item \texttt{python -m src.threshold}: chọn ngưỡng quyết định trên xác suất out-of-fold của tập train, ghi vào \texttt{thresholds.json}.
+    \item \texttt{python -m src.evaluate --model-dir outputs/models/tuned}: đánh giá một lần duy nhất trên tập test 1.409 khách hàng với ngưỡng đã chọn.
+\end{enumerate}
+Mọi lựa chọn (cấu hình, siêu tham số, ngưỡng, mô hình cuối) đều được quyết định trước khi dùng tập test.
+
+\subsubsection{Các chỉ số đánh giá}
+Với lớp dương là ``rời bỏ'' (Churn $=1$), gọi TP, FP, TN, FN là các ô của Confusion Matrix:
+\begin{align}
+    \text{Accuracy}  &= \frac{TP + TN}{TP + TN + FP + FN} \\
+    \text{Precision} &= \frac{TP}{TP + FP} \qquad
+    \text{Recall} = \frac{TP}{TP + FN} \\
+    \text{F1}        &= 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
+\end{align}
+\begin{itemize}
+    \item \textbf{Precision}: trong số khách hàng bị dự đoán rời bỏ, bao nhiêu phần trăm thực sự rời bỏ -- liên quan đến chi phí lãng phí ưu đãi.
+    \item \textbf{Recall}: trong số khách hàng thực sự rời bỏ, mô hình phát hiện được bao nhiêu -- liên quan đến doanh thu bị mất do bỏ sót.
+    \item \textbf{F1-score}: trung bình điều hòa của Precision và Recall, là chỉ số chính để so sánh trên dữ liệu mất cân bằng.
+    \item \textbf{ROC-AUC}: diện tích dưới đường ROC, đo khả năng \textit{xếp hạng} khách hàng theo rủi ro, không phụ thuộc vào ngưỡng phân loại.
+    \item \textbf{PR-AUC} (\textit{average precision}): diện tích dưới đường Precision--Recall. Cũng không phụ thuộc ngưỡng nhưng tập trung vào lớp thiểu số, nên nhạy hơn ROC-AUC khi dữ liệu mất cân bằng. Mức ngẫu nhiên của PR-AUC bằng tỉ lệ lớp dương (khoảng 0,265), trong khi của ROC-AUC là 0,5. PR-AUC là chỉ số dùng để chọn siêu tham số và mô hình cuối cùng.
+\end{itemize}

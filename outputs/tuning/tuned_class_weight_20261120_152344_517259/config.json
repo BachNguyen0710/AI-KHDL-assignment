@@ -1,0 +1,20 @@
+{
+  "experiment": "tuned_class_weight",
+  "random_state": 42,
+  "n_splits": 5,
+  "refit": "pr_auc",
+  "feature_engineering": false,
+  "imbalance": "class_weight",
+  "n_iter": {
+    "logistic_regression": 30,
+    "decision_tree": 50,
+    "random_forest": 40,
+    "xgboost": 60
+  },
+  "param_spaces": {
+    "logistic_regression": "{'model__C': <scipy.stats._distn_infrastructure.rv_continuous_frozen object at 0x0000017F7EBFA650>}",
+    "decision_tree": "{'model__max_depth': <scipy.stats._distn_infrastructure.rv_discrete_frozen object at 0x0000017F52B42F90>, 'model__min_samples_leaf': <scipy.stats._distn_infrastructure.rv_discrete_frozen object at 0x0000017F53E35590>, 'model__criterion': ['gini', 'entropy']}",
+    "random_forest": "{'model__n_estimators': <scipy.stats._distn_infrastructure.rv_discrete_frozen object at 0x0000017F53E35C90>, 'model__max_depth': [4, 6, 8, 10, 12, 16, None], 'model__min_samples_leaf': <scipy.stats._distn_infrastructure.rv_discrete_frozen object at 0x0000017F53E36690>, 'model__max_features': ['sqrt', 'log2', 0.5]}",
+    "xgboost": "{'model__n_estimators': <scipy.stats._distn_infrastructure.rv_discrete_frozen object at 0x0000017F53E36B50>, 'model__learning_rate': <scipy.stats._distn_infrastructure.rv_continuous_frozen object at 0x0000017F53E372D0>, 'model__max_depth': <scipy.stats._distn_infrastructure.rv_discrete_frozen object at 0x0000017F53E378D0>, 'model__min_child_weight': <scipy.stats._distn_infrastructure.rv_discrete_frozen object at 0x0000017F53E40190>, 'model__subsample': <scipy.stats._distn_infrastructure.rv_continuous_frozen object at 0x0000017F53E40850>, 'model__colsample_bytree': <scipy.stats._distn_infrastructure.rv_continuous_frozen object at 0x0000017F53E40E50>, 'model__reg_lambda': <scipy.stats._distn_infrastructure.rv_continuous_frozen object at 0x0000017F53E41590>}"
+  }
+}

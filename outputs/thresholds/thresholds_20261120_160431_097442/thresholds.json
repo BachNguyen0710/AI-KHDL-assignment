@@ -1,0 +1,11 @@
+{
+  "beta": 1.0,
+  "chosen_on": "out-of-fold probabilities, train set, 5-fold CV",
+  "source_run": "thresholds_20261120_160431_097442",
+  "thresholds": {
+    "logistic_regression": 0.6,
+    "decision_tree": 0.6,
+    "random_forest": 0.6,
+    "xgboost": 0.57
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "logistic_regression": {
+    "model__C": 0.9163741808778786
+  },
+  "decision_tree": {
+    "model__criterion": "entropy",
+    "model__max_depth": 12,
+    "model__min_samples_leaf": 51
+  },
+  "random_forest": {
+    "model__max_depth": 8,
+    "model__max_features": 0.5,
+    "model__min_samples_leaf": 11,
+    "model__n_estimators": 287
+  },
+  "xgboost": {
+    "model__colsample_bytree": 0.9633063543866615,
+    "model__learning_rate": 0.022587177280197233,
+    "model__max_depth": 3,
+    "model__min_child_weight": 5,
+    "model__n_estimators": 271,
+    "model__reg_lambda": 0.7862602663320721,
+    "model__subsample": 0.8211572356285312
+  }
+}

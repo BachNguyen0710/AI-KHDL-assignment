@@ -5,6 +5,11 @@
 #
 #   python -m src.train fit --models decision_tree random_forest
 #   python -m src.evaluate --models decision_tree random_forest
+#
+# Mô hình đã tune + ngưỡng chọn ở bước 4 (đọc <model-dir>/thresholds.json):
+#   python -m src.evaluate --model-dir outputs/models/tuned
+#   python -m src.evaluate --model-dir outputs/models/tuned \
+#       --thresholds outputs/thresholds/<run beta=2>/thresholds.json
 import argparse
 import json
 from datetime import datetime
@@ -20,8 +25,10 @@ import pandas as pd
 
 from sklearn.metrics import (
     accuracy_score,
+    average_precision_score,
     confusion_matrix,
     f1_score,
+    precision_recall_curve,
     precision_score,
     recall_score,
     roc_auc_score,
@@ -58,27 +65,56 @@ def load_pipeline(
     return joblib.load(model_path)
 
 
+def load_thresholds(
+    path: Path | None,
+    model_names: list[str],
+) -> tuple[dict[str, float], str]:
+    """Đọc ngưỡng từ thresholds.json (bước 4). Không có file -> dùng 0.5."""
+
+    if path is None or not Path(path).is_file():
+        return {name: 0.5 for name in model_names}, "mặc định 0.5"
+
+    with Path(path).open(encoding="utf-8") as file:
+        saved = json.load(file)["thresholds"]
+
+    missing = [name for name in model_names if name not in saved]
+    if missing:
+        raise ValueError(f"{path} không có ngưỡng cho: {missing}")
+
+    return {name: float(saved[name]) for name in model_names}, str(path)
+
+
 def evaluate_pipeline(
     pipeline: Pipeline,
     X_test: pd.DataFrame,
     y_test: pd.Series,
+    threshold: float = 0.5,
 ) -> tuple[dict, pd.Series, pd.Series]:
-    """Trả về (các chỉ số, nhãn dự đoán, xác suất churn)."""
+    """Trả về (các chỉ số, nhãn dự đoán, xác suất churn).
 
-    y_pred = pd.Series(pipeline.predict(X_test), index=y_test.index)
+    Dự đoán "rời" khi xác suất > threshold (cùng quy ước với predict.py).
+    """
+
     y_proba = pd.Series(
         pipeline.predict_proba(X_test)[:, 1],
         index=y_test.index,
     )
+    y_pred = (y_proba > threshold).astype(int)
 
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred, labels=[0, 1]).ravel()
 
     metrics = {
+        "threshold": threshold,
         "test_accuracy": accuracy_score(y_test, y_pred),
         "test_precision": precision_score(y_test, y_pred, zero_division=0),
         "test_recall": recall_score(y_test, y_pred, zero_division=0),
         "test_f1": f1_score(y_test, y_pred, zero_division=0),
+        # Để tham chiếu: F1 nếu vẫn dùng ngưỡng 0.5.
+        "test_f1_at_0.5": f1_score(
+            y_test, (y_proba > 0.5).astype(int), zero_division=0
+        ),
         "test_roc_auc": roc_auc_score(y_test, y_proba),
+        "test_pr_auc": average_precision_score(y_test, y_proba),
         "tn": int(tn),
         "fp": int(fp),
         "fn": int(fn),
@@ -112,6 +148,24 @@ def plot_results(
 
     fig.tight_layout()
     fig.savefig(figure_dir / "roc_curves.png", dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+    # Đường Precision-Recall: hợp với dữ liệu lệch lớp hơn ROC.
+    fig, ax = plt.subplots(figsize=(6, 5))
+
+    for model_name, y_proba in probabilities.items():
+        precision, recall, _ = precision_recall_curve(y_test, y_proba)
+        ap = average_precision_score(y_test, y_proba)
+        ax.plot(recall, precision, label=f"{MODEL_LABELS[model_name]} (AP = {ap:.4f})")
+
+    ax.axhline(y_test.mean(), linestyle="--", color="grey", label="Đoán ngẫu nhiên")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_title("Precision-Recall curve — tập test")
+    ax.legend(loc="upper right")
+
+    fig.tight_layout()
+    fig.savefig(figure_dir / "pr_curves.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
 
     # Ma trận nhầm lẫn, mỗi mô hình một ô.
@@ -155,6 +209,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--model-dir", type=Path, default=MODEL_DIR)
     parser.add_argument(
+        "--thresholds",
+        type=Path,
+        default=None,
+        help="File thresholds.json từ bước 4 (mặc định: <model-dir>/thresholds.json "
+        "nếu có, không thì dùng 0.5).",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=None,
@@ -180,7 +241,13 @@ def main() -> None:
 
     _, X_test, _, y_test = load_train_test()
 
+    thresholds, threshold_source = load_thresholds(
+        args.thresholds or args.model_dir / "thresholds.json",
+        model_names,
+    )
+
     print("Dữ liệu test:", X_test.shape)
+    print("Ngưỡng:", threshold_source, thresholds)
 
     all_metrics = []
     probabilities = {}
@@ -189,7 +256,9 @@ def main() -> None:
     for model_name in model_names:
         pipeline = load_pipeline(model_name, args.model_dir)
 
-        metrics, _, y_proba = evaluate_pipeline(pipeline, X_test, y_test)
+        metrics, _, y_proba = evaluate_pipeline(
+            pipeline, X_test, y_test, threshold=thresholds[model_name]
+        )
 
         all_metrics.append({"model": model_name, **metrics})
         probabilities[model_name] = y_proba
@@ -214,6 +283,9 @@ def main() -> None:
             {
                 "labels": ["Không rời (0)", "Rời (1)"],
                 "layout": "[[TN, FP], [FN, TP]]",
+                "model_dir": str(args.model_dir),
+                "threshold_source": threshold_source,
+                "thresholds": thresholds,
                 "matrices": matrices,
             },
             file,
@@ -225,11 +297,14 @@ def main() -> None:
 
     display_columns = [
         "model",
+        "threshold",
         "test_accuracy",
         "test_precision",
         "test_recall",
         "test_f1",
+        "test_f1_at_0.5",
         "test_roc_auc",
+        "test_pr_auc",
     ]
 
     print("\nKết quả trên tập test:")

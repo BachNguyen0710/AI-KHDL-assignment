@@ -1,0 +1,57 @@
+{
+  "labels": [
+    "Không rời (0)",
+    "Rời (1)"
+  ],
+  "layout": "[[TN, FP], [FN, TP]]",
+  "model_dir": "outputs\\models\\tuned",
+  "threshold_source": "outputs\\thresholds\\thresholds_20261120_160508_291871\\thresholds.json",
+  "thresholds": {
+    "logistic_regression": 0.32,
+    "decision_tree": 0.26,
+    "random_forest": 0.34,
+    "xgboost": 0.37
+  },
+  "matrices": {
+    "logistic_regression": [
+      [
+        590,
+        445
+      ],
+      [
+        30,
+        344
+      ]
+    ],
+    "decision_tree": [
+      [
+        547,
+        488
+      ],
+      [
+        30,
+        344
+      ]
+    ],
+    "random_forest": [
+      [
+        649,
+        386
+      ],
+      [
+        48,
+        326
+      ]
+    ],
+    "xgboost": [
+      [
+        649,
+        386
+      ],
+      [
+        45,
+        329
+      ]
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "model": "logistic_regression",
+  "trained_at": "2026-11-20T15:23:50",
+  "tuning_run": "tuned_class_weight_20261120_152344_517259",
+  "refit": "pr_auc",
+  "feature_engineering": false,
+  "imbalance": "class_weight",
+  "best_params": {
+    "model__C": 0.9163741808778786
+  },
+  "sklearn_version": "1.9.1"
+}

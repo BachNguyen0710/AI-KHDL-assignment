@@ -2,7 +2,11 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-
+from src.features import (
+    ENGINEERED_BINARY_FEATURES,
+    ENGINEERED_CATEGORICAL_FEATURES,
+    ENGINEERED_NUMERIC_FEATURES,
+)
 NUMERIC_FEATURES = [
     "tenure",
     "MonthlyCharges",
@@ -33,8 +37,18 @@ CATEGORICAL_FEATURES = [
 
 def build_preprocessor(
     scale_numeric: bool = True,
+    feature_engineering: bool = False,
 ) -> ColumnTransformer:
-    """Tạo bộ tiền xử lý cho các đặc trưng gốc của dataset."""
+    """Tạo bộ tiền xử lý cho đặc trưng gốc (và đặc trưng mới nếu có FE)."""
+
+    numeric_features = list(NUMERIC_FEATURES)
+    binary_features = list(BINARY_FEATURES)
+    categorical_features = list(CATEGORICAL_FEATURES)
+
+    if feature_engineering:
+        numeric_features += ENGINEERED_NUMERIC_FEATURES
+        binary_features += ENGINEERED_BINARY_FEATURES
+        categorical_features += ENGINEERED_CATEGORICAL_FEATURES
     
     numeric_steps = [
         ("imputer", SimpleImputer(strategy="median")),
@@ -59,12 +73,12 @@ def build_preprocessor(
     )
     preprocessor = ColumnTransformer(
         transformers=[
-            ("numeric", numeric_pipeline, NUMERIC_FEATURES),
-            ("binary", "passthrough", BINARY_FEATURES),
+            ("numeric", numeric_pipeline, numeric_features),
+            ("binary", "passthrough", binary_features),
             (
                 "categorical",
                 categorical_pipeline,
-                CATEGORICAL_FEATURES,
+                categorical_features,
             ),
         ],
         remainder="drop",

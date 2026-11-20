@@ -13,23 +13,29 @@ MODEL_NAMES = (
 def build_model(
     model_name: str,
     random_state: int = 42,
+    balance_ratio: float | None = None,
 ) -> BaseEstimator:
+
+    class_weight = "balanced" if balance_ratio else None
 
     if model_name == "logistic_regression":
         return LogisticRegression(
             solver="lbfgs",
             max_iter=2000,
+            class_weight=class_weight,
             random_state=random_state,
         )
 
     if model_name == "decision_tree":
         return DecisionTreeClassifier(
+            class_weight=class_weight,
             random_state=random_state,
         )
 
     if model_name == "random_forest":
         return RandomForestClassifier(
             n_estimators=100,
+            class_weight=class_weight,
             random_state=random_state,
             n_jobs=1,
         )
@@ -37,6 +43,7 @@ def build_model(
     if model_name == "xgboost":
         from xgboost import XGBClassifier
 
+        # XGBoost không có class_weight, dùng scale_pos_weight thay thế.
         return XGBClassifier(
             objective="binary:logistic",
             eval_metric="logloss",
@@ -44,6 +51,7 @@ def build_model(
             learning_rate=0.1,
             max_depth=6,
             tree_method="hist",
+            scale_pos_weight=balance_ratio or 1.0,
             random_state=random_state,
             n_jobs=1,
         )

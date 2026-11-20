@@ -1,0 +1,14 @@
+{
+  "model": "decision_tree",
+  "trained_at": "2026-11-20T15:23:54",
+  "tuning_run": "tuned_class_weight_20261120_152344_517259",
+  "refit": "pr_auc",
+  "feature_engineering": false,
+  "imbalance": "class_weight",
+  "best_params": {
+    "model__criterion": "entropy",
+    "model__max_depth": 12,
+    "model__min_samples_leaf": 51
+  },
+  "sklearn_version": "1.9.1"
+}

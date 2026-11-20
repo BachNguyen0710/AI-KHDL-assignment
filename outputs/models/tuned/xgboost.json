@@ -1,0 +1,18 @@
+{
+  "model": "xgboost",
+  "trained_at": "2026-11-20T15:25:11",
+  "tuning_run": "tuned_class_weight_20261120_152344_517259",
+  "refit": "pr_auc",
+  "feature_engineering": false,
+  "imbalance": "class_weight",
+  "best_params": {
+    "model__colsample_bytree": 0.9633063543866615,
+    "model__learning_rate": 0.022587177280197233,
+    "model__max_depth": 3,
+    "model__min_child_weight": 5,
+    "model__n_estimators": 271,
+    "model__reg_lambda": 0.7862602663320721,
+    "model__subsample": 0.8211572356285312
+  },
+  "sklearn_version": "1.9.1"
+}

@@ -1,0 +1,15 @@
+{
+  "model": "random_forest",
+  "trained_at": "2026-11-20T15:24:41",
+  "tuning_run": "tuned_class_weight_20261120_152344_517259",
+  "refit": "pr_auc",
+  "feature_engineering": false,
+  "imbalance": "class_weight",
+  "best_params": {
+    "model__max_depth": 8,
+    "model__max_features": 0.5,
+    "model__min_samples_leaf": 11,
+    "model__n_estimators": 287
+  },
+  "sklearn_version": "1.9.1"
+}

@@ -1,18 +1,22 @@
 \documentclass[a4paper]{article}
 % Cấu hình lề và kích thước Header/Footer
-\usepackage[a4paper, margin=2cm, headheight=45pt, footskip=1.2cm]{geometry}
+\usepackage[a4paper, margin=2cm, top=2.6cm, headheight=58pt, headsep=14pt, footskip=1.2cm]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage[T5]{fontenc} 
 \usepackage[vietnamese]{babel}
+% Cỡ chữ nội dung 12pt (các cỡ \small, \large,... co giãn theo).
+\usepackage{scrextend}
+\changefontsizes[18pt]{12pt}
 \usepackage{amsmath, amssymb, amsfonts}
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
-\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
 \usepackage{listings}
 \usepackage{booktabs, array, multirow, colortbl}
+\usepackage{adjustbox}
 \usepackage{float}
 \usepackage{fancyhdr}
 \usepackage{lastpage}
@@ -89,45 +93,44 @@
 \renewcommand{\headrulewidth}{0.3pt}
 \renewcommand{\footrulewidth}{0.3pt}
 
-\linespread{1.5}
-\setlength{\emergencystretch}{3em} % tránh tràn lề với các đoạn \texttt dài
+\linespread{1.15}
+\setcounter{tocdepth}{2}
+\setlength{\emergencystretch}{6em} % tránh tràn lề với các đoạn \texttt dài
 
 \begin{document}
 
 % Trang bìa
 \begin{titlepage}
+\linespread{1.15}\selectfont
 \begin{center}
 VIETNAM NATIONAL UNIVERSITY, HO CHI MINH CITY \\
 UNIVERSITY OF TECHNOLOGY \\
 FACULTY OF COMPUTER SCIENCE AND ENGINEERING
 \end{center}
-\vspace{1cm}
-\begin{figure}[h!]
-\begin{center}
-\includegraphics[width=10cm]{hcmut.png}
-\end{center}
-\end{figure}
 \vspace{0.5cm}
 \begin{center}
+\includegraphics[width=7cm]{hcmut.png}
+\end{center}
+\vspace{0.2cm}
+\begin{center}
 \begin{tabular}{c}
-\multicolumn{1}{l}{\textbf{{\Large Lập trình cho Trí tuệ nhân tạo và Khoa học dữ liệu (CO3135)}}}\\
+\multicolumn{1}{l}{\parbox{15cm}{\raggedright\textbf{\Large Lập trình cho Trí tuệ nhân tạo và Khoa học dữ liệu (CO3135)}}}\\
 \multicolumn{1}{l}{\textbf{{\large HK261 - Lớp L01}}}\\
 ~~\\ \hline \\
 \multicolumn{1}{l}{\textbf{{\Large Bài tập lớn}}}\\ \\
 \parbox{15cm}{\centering\textbf{\textit{{\LARGE Dự đoán khách hàng rời đi bằng máy học với kỹ thuật xử lý đặc trưng và tối ưu hóa siêu tham số}}}}\\ \\ \hline
 \end{tabular}
 \end{center}
-\vspace{1.5cm}
-\begin{table}[h]
-\centering
+\vspace{0.5cm}
+\begin{center}
     \begin{tabular}{rl}
     \hspace{3 cm}\textbf{Giảng viên hướng dẫn}: & Trần Huy\\
-    & \\[10pt]
+    & \\[6pt]
     \textbf{Sinh viên thực hiện}:
     & Nguyễn Tiến Bách - 2310201\\
     & Trần Gia Bảo Anh - 2310148\\
     \end{tabular}
-\end{table}
+\end{center}
 \vfill
 \begin{center}
 {\footnotesize HO CHI MINH CITY, NOVEMBER 2026}
@@ -141,11 +144,14 @@ FACULTY OF COMPUTER SCIENCE AND ENGINEERING
 \newpage
 
 % Các nội dung chính
-\include{chapters/01_gioi_thieu}
-\include{chapters/02_tong_quan_tai_lieu}
-\include{chapters/03_du_lieu_tien_xu_ly}
-\include{chapters/04_mo_hinh_pipeline}
-\include{chapters/05_thuc_nghiem}
-\include{chapters/06_ket_luan}
-\include{chapters/references}
+\input{chapters/01_tong_quan}
+\input{chapters/02_tien_xu_ly}
+\input{chapters/03_quy_trinh_thuc_nghiem}
+\input{chapters/04_logistic_regression}
+\input{chapters/05_decision_tree}
+\input{chapters/06_random_forest}
+\input{chapters/07_xgboost}
+\input{chapters/08_so_sanh_ket_luan}
+\newpage
+\input{chapters/references}
 \end{document}

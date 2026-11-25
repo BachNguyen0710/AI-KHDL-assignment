@@ -1,0 +1,52 @@
+\section{Tổng quan đề tài}
+
+\subsection{Đặt vấn đề và tính cấp thiết}
+Trong các ngành dịch vụ thuê bao như viễn thông, ngân hàng hay các nền tảng trực tuyến, \textbf{khách hàng rời bỏ} (\textit{customer churn}) là một trong những nguyên nhân chính làm suy giảm doanh thu. Chi phí để thu hút một khách hàng mới thường cao hơn nhiều so với chi phí giữ chân một khách hàng hiện tại, vì vậy doanh nghiệp có động lực lớn để nhận diện sớm những khách hàng có nguy cơ rời bỏ và chủ động đưa ra các chính sách giữ chân (ưu đãi, nâng cấp hợp đồng, hỗ trợ kỹ thuật,\ldots).
+
+Khách hàng có thể ngừng sử dụng dịch vụ vì chi phí cao, chất lượng dịch vụ không phù hợp, hợp đồng ngắn hạn dễ chấm dứt hoặc nhiều lý do khác. Các dấu hiệu này thường ẩn trong thông tin hợp đồng, lịch sử sử dụng và hành vi thanh toán của khách hàng. Đây là bối cảnh phù hợp để ứng dụng các thuật toán Học máy (Machine Learning) nhằm khai thác các quy luật từ dữ liệu lịch sử.
+
+\subsection{Bài toán và mục tiêu nghiên cứu}
+Dựa trên thông tin nhân khẩu học, các dịch vụ đã đăng ký, thông tin hợp đồng và chi phí của khách hàng, bài toán đặt ra là dự đoán khách hàng đó có rời bỏ dịch vụ hay không. Đây là bài toán \textbf{phân loại nhị phân} (\textit{binary classification}):
+\begin{itemize}
+    \item \textbf{Đầu vào:} vector đặc trưng $\mathbf{x}$ gồm 19 thuộc tính của một khách hàng (giới tính, thời gian sử dụng, loại hợp đồng, phương thức thanh toán, chi phí hàng tháng,\ldots).
+    \item \textbf{Đầu ra:} nhãn $y \in \{0, 1\}$, trong đó $y = 0$: khách hàng không rời bỏ dịch vụ; $y = 1$: khách hàng rời bỏ dịch vụ.
+\end{itemize}
+Ngoài nhãn dự đoán, mô hình còn cung cấp xác suất $P(y=1 \mid \mathbf{x})$, cho phép doanh nghiệp xếp hạng khách hàng theo mức độ rủi ro và ưu tiên nguồn lực giữ chân.
+
+Đề tài tập trung vào nhánh \textbf{Classic Machine Learning} với các mục tiêu cụ thể:
+\begin{enumerate}
+    \item Xây dựng một \textbf{pipeline} học máy hoàn chỉnh, có thể tái lập, từ đọc dữ liệu, làm sạch, tiền xử lý đến huấn luyện, đánh giá và dự đoán cho khách hàng mới.
+    \item Huấn luyện và so sánh bốn thuật toán đại diện cho bốn họ mô hình: Logistic Regression (tuyến tính), Decision Tree (cây đơn), Random Forest (bagging) và XGBoost (boosting).
+    \item Đánh giá ảnh hưởng của \textbf{Feature Engineering}, kỹ thuật \textbf{xử lý mất cân bằng dữ liệu}, \textbf{Hyperparameter Tuning} và việc \textbf{chọn ngưỡng quyết định} lên hiệu năng mô hình.
+    \item Giải thích mô hình (feature importance, permutation importance, hệ số Logistic Regression) và liên hệ kết quả với góc nhìn kinh doanh. Các mối liên hệ rút ra là quan hệ thống kê quan sát được từ dữ liệu, không phải kết luận nhân quả.
+\end{enumerate}
+
+\subsection{Phạm vi và phương pháp thực hiện}
+Đề tài sử dụng bộ dữ liệu công khai \textit{Telco Customer Churn} của IBM (7.043 khách hàng, 21 cột). Quy trình được triển khai theo các bước:
+\begin{itemize}
+    \item \textbf{Khám phá và làm sạch dữ liệu (EDA):} kiểm tra kiểu dữ liệu, giá trị thiếu, trùng lặp, phân bố nhãn và mối liên hệ giữa các đặc trưng với Churn.
+    \item \textbf{Tiền xử lý:} xử lý giá trị thiếu, One-Hot Encoding cho biến phân loại, chuẩn hóa biến số khi cần, chia Train/Test 80/20 có phân tầng (\textit{stratified}).
+    \item \textbf{Feature Engineering:} tạo các đặc trưng mới như nhóm thời gian sử dụng, số dịch vụ đăng ký, đặc trưng kết hợp hợp đồng -- thời gian -- chi phí.
+    \item \textbf{Huấn luyện và tối ưu:} Stratified 5-fold Cross-Validation trên tập train; xử lý mất cân bằng bằng class weight hoặc SMOTE; tối ưu siêu tham số bằng RandomizedSearchCV; chọn ngưỡng quyết định trên xác suất out-of-fold.
+    \item \textbf{Đánh giá:} Accuracy, Precision, Recall, F1-score, ROC-AUC, PR-AUC và Confusion Matrix trên tập test được giữ riêng.
+\end{itemize}
+
+Toàn bộ dự án được cài đặt bằng Python với các thư viện \texttt{pandas}, \texttt{numpy}, \texttt{scikit-learn} \cite{pedregosa2011}, \texttt{imbalanced-learn}, \texttt{xgboost}, \texttt{matplotlib} và \texttt{seaborn}. Bài toán không yêu cầu GPU hay Deep Learning.
+
+\subsection{Tổng quan các nghiên cứu liên quan}
+Dự đoán khách hàng rời bỏ là một bài toán kinh điển trong quản trị quan hệ khách hàng (CRM), đặc biệt trong ngành viễn thông -- nơi thị trường bão hòa và chi phí chuyển đổi nhà mạng thấp. Các nghiên cứu thường mô hình hóa bài toán dưới dạng phân loại nhị phân có giám sát trên dữ liệu dạng bảng (\textit{tabular data}) gồm thông tin hợp đồng, hành vi sử dụng và thanh toán \cite{huang2012, verbeke2012}. Một số đặc điểm chung được ghi nhận trong tài liệu:
+\begin{itemize}
+    \item \textbf{Dữ liệu mất cân bằng:} số khách hàng rời bỏ thường chiếm thiểu số, khiến Accuracy dễ gây hiểu lầm; các chỉ số như Recall, F1-score, ROC-AUC được ưu tiên \cite{vafeiadis2015}.
+    \item \textbf{Chi phí sai sót không đối xứng:} bỏ sót một khách hàng sắp rời bỏ (False Negative) thường tốn kém hơn việc gửi nhầm ưu đãi cho khách hàng trung thành (False Positive). Verbeke và cộng sự \cite{verbeke2012} đề xuất đánh giá mô hình theo lợi nhuận kỳ vọng thay vì chỉ theo độ chính xác.
+    \item \textbf{Vai trò của đặc trưng:} chất lượng đặc trưng đầu vào ảnh hưởng mạnh đến hiệu năng; nhiều nghiên cứu cho thấy Feature Engineering dựa trên hiểu biết nghiệp vụ mang lại cải thiện đáng kể \cite{huang2012, ahmad2019}.
+\end{itemize}
+
+Về lựa chọn mô hình, Vafeiadis và cộng sự \cite{vafeiadis2015} so sánh nhiều thuật toán (mạng nơ-ron, SVM, cây quyết định, Naïve Bayes, Logistic Regression) cho bài toán churn viễn thông và cho thấy việc kết hợp boosting giúp cải thiện hiệu năng, trong đó SVM kết hợp boosting đạt kết quả tốt nhất. Ahmad và cộng sự \cite{ahmad2019} xây dựng hệ thống dự đoán churn trên nền tảng dữ liệu lớn và ghi nhận XGBoost cho AUC cao nhất trong các mô hình được thử nghiệm. Nhìn chung, các phương pháp ensemble dựa trên cây thường vượt trội, tuy nhiên mức chênh lệch phụ thuộc mạnh vào dữ liệu, đặc trưng và việc tinh chỉnh siêu tham số. Đây là lý do đề tài so sánh bốn mô hình trên cùng một pipeline, cùng cách chia dữ liệu, đồng thời lần lượt đánh giá đóng góp của từng kỹ thuật. Cơ sở lý thuyết của từng mô hình được trình bày ở các Mục~\ref{sec:lr}--\ref{sec:xgb}; các kỹ thuật xử lý mất cân bằng, tối ưu siêu tham số và giải thích mô hình được trình bày ở Mục~\ref{sec:method}.
+
+\subsection{Ý nghĩa khoa học và thực tiễn}
+Về mặt khoa học, đề tài minh họa một quy trình đánh giá chặt chẽ cho bài toán phân loại mất cân bằng trên dữ liệu bảng: tách tập test từ đầu, đóng gói tiền xử lý trong Pipeline để tránh rò rỉ dữ liệu, so sánh các cấu hình theo cặp trên cùng các fold và chọn ngưỡng trên xác suất out-of-fold. Kết quả cho thấy rõ đóng góp riêng của từng kỹ thuật thay vì chỉ báo cáo một mô hình tốt nhất.
+
+Về mặt thực tiễn, mô hình xuất ra xác suất rời bỏ cho từng khách hàng, giúp bộ phận chăm sóc khách hàng ưu tiên nguồn lực cho nhóm có nguy cơ cao. Việc giải thích mô hình chỉ ra các yếu tố gắn liền với nguy cơ rời bỏ (loại hợp đồng, thời gian sử dụng, dịch vụ Internet, dịch vụ hỗ trợ), từ đó gợi ý các chính sách giữ chân cụ thể.
+
+\subsection{Link github (Source Code)}
+\url{https://github.com/BachNguyen0710/AI-KHDL-assignment}

@@ -1,0 +1,180 @@
+\section{Logistic Regression}\label{sec:lr}
+
+\subsection{Giới thiệu về Logistic Regression}
+Logistic Regression \cite{hosmer2013} ước lượng xác suất rời bỏ bằng cách đưa một tổ hợp tuyến tính của đặc trưng qua hàm sigmoid; tương đương, log-odds là hàm tuyến tính của đặc trưng, nên hệ số $w_j$ là mức thay đổi log-odds khi $x_j$ tăng một đơn vị:
+\begin{equation}
+    P(y = 1 \mid \mathbf{x}) = \frac{1}{1 + e^{-(\mathbf{w}^\top \mathbf{x} + b)}}, \qquad
+    \log \frac{P(y=1 \mid \mathbf{x})}{1 - P(y=1 \mid \mathbf{x})} = \mathbf{w}^\top \mathbf{x} + b
+\end{equation}
+Tham số được học bằng cách cực tiểu hóa log-loss có trọng số lớp $s_i$ và chính quy hóa L2 ($C$ nhỏ: chính quy hóa mạnh):
+\begin{equation}
+    \mathcal{L}(\mathbf{w}, b) = -\sum_{i=1}^{n} s_i \left[y_i \log \hat{p}_i + (1-y_i)\log(1-\hat{p}_i)\right] + \frac{1}{2C}\|\mathbf{w}\|_2^2
+\end{equation}
+Với \texttt{class\_weight="balanced"}, mẫu rời bỏ có trọng số $s_i \approx 1{,}88$ và mẫu không rời bỏ $s_i \approx 0{,}68$. Hàm mất mát lồi nên có nghiệm tối ưu toàn cục (tìm bằng \texttt{lbfgs}).
+
+\begin{table}[H]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{|p{7cm}|p{7cm}|}
+\hline
+\textbf{Ưu điểm} & \textbf{Nhược điểm} \\
+\hline
+Nhanh, ổn định, nghiệm tối ưu toàn cục, ít overfit & Chỉ biểu diễn được biên quyết định tuyến tính \\
+\hline
+Hệ số và tỉ số odds dễ diễn giải & Không tự học được tương tác, quan hệ phi tuyến \\
+\hline
+Là baseline mạnh trên dữ liệu bảng & Cần chuẩn hóa; hệ số khó đọc khi đặc trưng tương quan \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\caption{Ưu và nhược điểm của Logistic Regression}
+\end{table}
+
+\subsection{Mã nguồn và huấn luyện}
+Logistic Regression là mô hình duy nhất được bật \texttt{StandardScaler} cho ba đặc trưng số (\texttt{requires\_scaling()}); các cột one-hot giữ nguyên giá trị 0/1. Mô hình được khởi tạo trong \texttt{src/models.py}:
+
+\begin{lstlisting}[style=pythonstyle, caption={Khởi tạo Logistic Regression trong \texttt{src/models.py}}]
+class_weight = "balanced" if balance_ratio else None
+
+if model_name == "logistic_regression":
+    return LogisticRegression(
+        solver="lbfgs",
+        max_iter=2000,
+        class_weight=class_weight,
+        random_state=random_state,
+    )
+\end{lstlisting}
+
+Siêu tham số duy nhất được tối ưu là $C$, lấy mẫu theo phân phối log-uniform trên $[10^{-3}, 10^{2}]$ với 30 tổ hợp (\texttt{src/tune.py}). Giá trị tốt nhất theo PR-AUC là $C = 0{,}92$, gần với mặc định $C = 1$.
+
+\subsection{Kết quả và đánh giá}
+
+\subsubsection{Kết quả cross-validation qua các giai đoạn}
+\begin{table}[H]
+\centering
+\small
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+\textbf{Cấu hình} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1 train} \\
+\hline
+Baseline & 0,652 & 0,543 & 0,592 & 0,846 & 0,662 & 0,602 \\
+\hline
++ Class weight & 0,517 & 0,801 & 0,628 & 0,846 & 0,660 & 0,634 \\
+\hline
++ Tuning ($C = 0{,}92$) & 0,517 & 0,801 & 0,628 & 0,846 & 0,660 & 0,634 \\
+\hline
++ Ngưỡng 0,60 (out-of-fold) & 0,571 & 0,719 & \textbf{0,637} & 0,846 & 0,660 & -- \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\caption{Logistic Regression: kết quả validation (trung bình 5 fold) qua từng bước}
+\end{table}
+
+Class weight là bước mang lại cải thiện chính (F1 +0,036, Recall từ 0,543 lên 0,801, tăng ở cả 5 fold); tuning gần như không thay đổi gì vì mô hình vốn không overfit (F1 train và validation chênh nhau dưới 0,01).
+
+\subsubsection{Kết quả trên tập test}
+\begin{table}[H]
+\centering
+\begin{minipage}[t]{0.56\textwidth}
+\centering
+\small
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Lớp} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\hline
+Không rời bỏ (0) & 0,88 & 0,78 & 0,83 & 1.035 \\
+\hline
+Rời bỏ (1) & 0,54 & 0,71 & 0,61 & 374 \\
+\hline
+Accuracy & & & 0,76 & 1.409 \\
+\hline
+Macro avg & 0,71 & 0,74 & 0,72 & 1.409 \\
+\hline
+Weighted avg & 0,79 & 0,76 & 0,77 & 1.409 \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\caption{Logistic Regression: kết quả phân loại trên tập test (ngưỡng 0,60; ROC-AUC 0,842; PR-AUC 0,633)}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.42\textwidth}
+\centering
+\small
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{|c|c|c|c|}
+\cline{3-4}
+\multicolumn{2}{c|}{} & \multicolumn{2}{c|}{\textbf{Dự đoán}} \\
+\cline{3-4}
+\multicolumn{2}{c|}{} & Không rời bỏ & Rời bỏ \\
+\hline
+\multirow{2}{*}{\textbf{Thực tế}} & Không rời bỏ & \cellcolor{blue!30}809 & 226 \\
+\cline{2-4}
+ & Rời bỏ & 110 & \cellcolor{blue!30}264 \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\caption{Logistic Regression: Confusion Matrix trên tập test}
+\end{minipage}
+\end{table}
+
+Mô hình phát hiện được 264/374 khách hàng rời bỏ, bỏ sót 110; đổi lại có 226/1.035 khách hàng ở lại bị cảnh báo nhầm.
+
+\subsubsection{Hệ số mô hình}
+Vì đặc trưng số đã được chuẩn hóa, hệ số của chúng tương ứng với mức thay đổi log-odds khi đặc trưng tăng một độ lệch chuẩn; với cột one-hot, hệ số là mức thay đổi khi khách hàng thuộc nhóm đó.
+
+\begin{table}[H]
+\centering
+\small
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{|l|c|c|l|c|c|}
+\hline
+\multicolumn{3}{|c|}{\textbf{Tăng khả năng rời bỏ}} & \multicolumn{3}{c|}{\textbf{Giảm khả năng rời bỏ}} \\
+\cline{1-3} \cline{4-6}
+\textbf{Đặc trưng} & $\beta$ & $e^{\beta}$ & \textbf{Đặc trưng} & $\beta$ & $e^{\beta}$ \\
+\hline
+InternetService = Fiber optic & 0,686 & 1,98 & \texttt{tenure} & $-$1,151 & 0,32 \\
+\hline
+Contract = Month-to-month & 0,656 & 1,93 & Contract = Two year & $-$0,774 & 0,46 \\
+\hline
+\texttt{TotalCharges} & 0,484 & 1,62 & \texttt{MonthlyCharges} & $-$0,632 & 0,53 \\
+\hline
+StreamingMovies = Yes & 0,265 & 1,30 & InternetService = DSL & $-$0,609 & 0,54 \\
+\hline
+StreamingTV = Yes & 0,251 & 1,29 & InternetService = No & $-$0,268 & 0,77 \\
+\hline
+PaymentMethod = Electronic check & 0,240 & 1,27 & & & \\
+\hline
+OnlineSecurity = No & 0,199 & 1,22 & & & \\
+\hline
+TechSupport = No & 0,165 & 1,18 & & & \\
+\hline
+\end{tabular}
+\end{adjustbox}
+\caption{Các hệ số lớn nhất của Logistic Regression đã tuning}
+\end{table}
+
+Permutation importance trên tập test (Hình~\ref{fig:perm}, Mục~\ref{sec:xgb}) xếp \texttt{tenure} quan trọng nhất (PR-AUC giảm 0,232 khi xáo trộn), tiếp theo là \texttt{InternetService} (0,084), \texttt{MonthlyCharges} (0,069) và \texttt{Contract} (0,056).
+
+\subsubsection{Nhận xét và đánh giá}
+\textbf{Điểm mạnh}
+\begin{itemize}
+    \item Là mô hình tốt nhất ở cấu hình baseline (F1 0,592, ROC-AUC 0,846) và gần như không overfit; điểm test khớp với cross-validation (ROC-AUC 0,846 so với 0,842).
+    \item Chỉ cần class weight là đạt gần mức của các mô hình phức tạp hơn sau khi tuning (F1 validation 0,628--0,637).
+    \item Hệ số dễ diễn giải và nhất quán với EDA: \texttt{tenure} dài và hợp đồng 2 năm làm giảm mạnh nguy cơ rời bỏ (tỉ số odds 0,32 và 0,46); Fiber optic và hợp đồng theo tháng làm odds tăng gần gấp đôi.
+    \item Huấn luyện rất nhanh (khoảng 0,04 giây mỗi fold, ngang Decision Tree, so với 0,37 giây của Random Forest 100 cây).
+\end{itemize}
+
+\textbf{Hạn chế}
+\begin{itemize}
+    \item F1 test thấp nhất trong bốn mô hình sau khi tối ưu (0,611), và PR-AUC giảm nhiều nhất từ CV sang test (0,660 xuống 0,633).
+    \item Không biểu diễn được quan hệ phi tuyến, ví dụ nguy cơ rời bỏ giảm rất nhanh trong năm đầu rồi đi ngang.
+    \item \textbf{Đa cộng tuyến:} \texttt{TotalCharges} xấp xỉ \texttt{tenure} $\times$ \texttt{MonthlyCharges}, còn \texttt{MonthlyCharges} gần như được xác định bởi các dịch vụ đăng ký. Vì vậy dấu của từng hệ số riêng lẻ (\texttt{MonthlyCharges} âm, \texttt{TotalCharges} dương) không nên diễn giải tách rời.
+\end{itemize}
+
+\textbf{Hướng cải thiện}
+\begin{enumerate}
+    \item Thêm đặc trưng phi tuyến cho mô hình tuyến tính (spline hoặc chia nhóm \texttt{tenure}, tương tác hợp đồng $\times$ thời gian sử dụng).
+    \item Thử chính quy hóa L1 hoặc Elastic Net để giảm ảnh hưởng của các đặc trưng tương quan và chọn lọc đặc trưng.
+    \item Loại bỏ hoặc biến đổi \texttt{TotalCharges} để hệ số dễ diễn giải hơn.
+\end{enumerate}
